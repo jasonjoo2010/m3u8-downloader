@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -110,7 +111,8 @@ public class Main {
         return url;
     }
     
-    private static KeyInfo parseKey(String str) throws IOException {
+    private static KeyInfo parseKey(String m3u8Url, String str) throws IOException {
+        URL url = new URL(m3u8Url);
         KeyInfo keyInfo = new KeyInfo();
         Matcher m = PAIR_PATTERN.matcher(str);
         while (m.find()) {
@@ -127,7 +129,10 @@ public class Main {
                     break;
                 }
                 case "URI":
-                    System.out.println("获取加密key：" + val);
+                    if (val.startsWith("/")) {
+                        val = url.getProtocol() + "://" + url.getHost() + val;
+                    }
+                    System.out.println("获取加密key：" + val); 
                     CloseableHttpResponse resp = HttpClientUtil.executeRequestDirect(new HttpGet(val), 10000, "utf-8");
                     keyInfo.key = EntityUtils.toByteArray(resp.getEntity());
                     break;
@@ -162,7 +167,7 @@ public class Main {
                     if (StringUtils.isEmpty(line)) return true;
                     if (line.startsWith("#EXT-X-KEY:")) {
                         line = line.substring("#EXT-X-KEY:".length());
-                        KeyInfo keyInfo = parseKey(line);
+                        KeyInfo keyInfo = parseKey(urlStr, line);
                         try {
                             cipher = Cipher.getInstance(ALGORITHM_MAP.get(keyInfo.algorithm));
                             SecretKeySpec sKeySpec = new SecretKeySpec(keyInfo.key, keyInfo.algorithm);
