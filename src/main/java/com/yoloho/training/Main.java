@@ -8,6 +8,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -111,6 +113,11 @@ public class Main {
         return url;
     }
     
+    private static String baseHost(String url) throws URISyntaxException {
+        URI l = new URI(url);
+        return l.getScheme()+"://"+l.getHost();
+    }
+    
     private static KeyInfo parseKey(String m3u8Url, String str) throws IOException {
         URL url = new URL(m3u8Url);
         KeyInfo keyInfo = new KeyInfo();
@@ -144,7 +151,7 @@ public class Main {
         return keyInfo;
     }
     
-    public static void main(String[] args) {
+    public static void main(String[] args) throws URISyntaxException {
         if (args.length < 1) {
             System.out.println("命令语法：java -jar m3u8-downloader.jar <m3u8文件url>");
             System.out.println("Usage：java -jar m3u8-downloader.jar <m3u8_url>");
@@ -153,6 +160,7 @@ public class Main {
         }
         String urlStr = args[0];
         String baseUrl = baseUrl(urlStr);
+        String baseHost = baseHost(urlStr);
         String m3u8Body = HttpClientUtil.getRequest(urlStr);
         List<String> fileList = new ArrayList<String>();
         HttpClientUtil.setCustomUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.5 Safari/605.1.15");
@@ -183,6 +191,8 @@ public class Main {
                         urlNext = false;
                         if (line.startsWith("http://") || line.startsWith("https://")) {
                             fileList.add(line);
+                        } else if (line.startsWith("/")) {
+                            fileList.add(baseHost + line);
                         } else {
                             fileList.add(baseUrl + line);
                         }
